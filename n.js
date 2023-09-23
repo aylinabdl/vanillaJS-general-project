@@ -1,49 +1,101 @@
-const firstNameInput = document.getElementById("firstName");
-const lastNameInput = document.getElementById("lastName");
-const scoreInput = document.getElementById("score");
-const saveButon = document.querySelector(".sub-btn");
+const studentForm = document.querySelector("form");
+const firstNameInput = document.querySelector("#firstName");
+const lastNameInput = document.querySelector("#lastName");
+const scoreInput = document.querySelector("#score");
+const emailInput = document.querySelector("#emailInput");
+const saveButton = document.querySelector(".sub-btn");
 const displayData = document.querySelector(".data-div");
 
-displayData.addEventListener("click", function (e) {
-  if (e.target.classList.contains("delete-icon")) {
-    const dataCard = e.target.closest(".data-card");
-    if (dataCard) {
-      displayData.removeChild(dataCard);
-    }
-  }
-});
-scoreInput.addEventListener("input", function (e) {
-  const inputValue = e.target.value;
-  e.target.value = inputValue.replace(/\D/g, "");
-});
+let isEditMode = false;
+let studentList = [];
 
-saveButon.addEventListener("click", function addData(e) {
+studentForm.addEventListener("submit", handleForm);
+
+function handleForm(e) {
   e.preventDefault();
-  const firstName = firstNameInput.value;
-  const lastName = lastNameInput.value;
-  const score = scoreInput.value;
 
-  if (firstName === "" || lastName === "" || score === "") {
-    alert("Please fill in all the fields.");
-  } else {
-    const newDataCard = document.createElement("div");
-    newDataCard.classList.add("data-card");
-    newDataCard.innerHTML = `
-    <h3>Name: ${firstName}</h3>
-    <h3>Last Name: ${lastName}</h3>
-    <h3>Score: ${score}</h3>
-    <div class="controls">
-            <button class="delete-icon">
-              <i class="material-icons">delete</i>
-            </button>
-            <button class="edit-icon">
-              <i class="material-icons">edit</i>
-            </button>
-            </div>
-    `;
-    displayData.appendChild(newDataCard);
-    firstNameInput.value = "";
-    lastNameInput.value = "";
-    scoreInput.value = "";
+  if (inputIsEmpty()) {
+    alert("please fill in all the fields");
+    return;
   }
-});
+  const student = {
+    firstName: firstNameInput.value,
+    lastName: lastNameInput.value,
+    email: emailInput.value,
+    score: scoreInput.value,
+  };
+
+  if (isEditMode) {
+    const editedStudent = studentList.find((s) => s.email === emailInput.value);
+    if (editedStudent) {
+      // Update student's data
+      editedStudent.firstName = student.firstName;
+      editedStudent.lastName = student.lastName;
+      editedStudent.score = student.score;
+      // Reset edit mode
+      isEditMode = false;
+    }
+  } else {
+    studentList.push(student);
+  }
+
+  studentForm.reset();
+  showStudent();
+}
+
+function inputIsEmpty() {
+  if (isEditMode) {
+    saveButton.value = "Edit";
+  }
+  const isEmptyInputs =
+    firstNameInput.value === "" ||
+    lastNameInput.value === "" ||
+    scoreInput.value === "" ||
+    emailInput.value === "";
+  const scoreIsNumber = isNaN(+scoreInput.value);
+  const scoreLimit = !(+scoreInput.value <= 20) || !(+scoreInput.value >= 0);
+  return isEmptyInputs || scoreIsNumber || scoreLimit;
+}
+
+function deleteStudent(studentmail) {
+  studentList = studentList.filter((student) => student.email !== studentmail);
+  const student = studentList.find((student) => student.email === studentmail);
+  showStudent();
+}
+
+function editStudent(studentEmail) {
+  // Find the student to edit
+  const editedStudent = studentList.find((s) => s.email === studentEmail);
+  if (editedStudent) {
+    // Set edit mode and populate input fields with the student's data
+    isEditMode = true;
+    firstNameInput.value = editedStudent.firstName;
+    lastNameInput.value = editedStudent.lastName;
+    scoreInput.value = editedStudent.score;
+    emailInput.value = editedStudent.email;
+  }
+}
+
+function showStudent() {
+  displayData.innerHTML = "";
+  for (const student of studentList) {
+    const cardTemplate = `
+    <div class="data-card">
+        
+             <h3>Name: ${student.firstName}</h3>
+      <h3>Last Name: ${student.lastName}</h3>
+      <h3>Email: ${student.email}</h3>
+      <h3>Score: ${student.score}</h3>
+      <div class="controls">
+        <button class="delete-icon" onclick="deleteStudent('${student.email}')">
+          <i class="material-icons">delete</i>
+        </button>
+            <button class="edit-icon" onclick="editStudent('${student.email}')">
+          <i class="material-icons">edit</i>
+        </button>
+            </div>
+    </div>
+        `;
+    displayData.insertAdjacentHTML("beforeend", cardTemplate);
+  }
+}
